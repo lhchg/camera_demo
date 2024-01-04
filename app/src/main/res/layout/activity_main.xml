@@ -20,7 +20,7 @@
         android:background="@color/colorPrimary">
 
         <Button
-            android:id="@+id/snapshort"
+            android:id="@+id/picture"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"

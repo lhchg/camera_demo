@@ -9,6 +9,7 @@ import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
+import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.TotalCaptureResult;
@@ -18,9 +19,12 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.annotation.NonNull;
+import android.support.constraint.solver.widgets.Snapshot;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Surface;
 import android.view.TextureView;
+import android.view.View;
+import android.widget.Button;
 import android.widget.Toast;
 
 import java.io.File;
@@ -32,8 +36,17 @@ public class MainActivity extends AppCompatActivity {
     public static final String TAG = "MainActivity";
 
     private static final int REQUEST_PERMISSION = 1;
-
     private static final String CAMERA_ID = "1";
+
+    /**
+     *Camera state: Showing camera Preview.
+     */
+    private static final int STATE_PREVIEW = 0;
+
+    /**
+     * Camera state: Waiting for the foucs to be locked.
+     */
+    private static final int STATE_WAITING_LOCK =1;
 
     private int mPreviewWidth;
     private int mPreviewHeight;
@@ -50,11 +63,16 @@ public class MainActivity extends AppCompatActivity {
     private CameraCaptureSession mCameraCaptureSession;
     private CaptureRequest mCaptureRequest;
 
+    private int mState;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         root = Environment.getExternalStorageDirectory();
+        Button pictureButton = findViewById(R.id.picture);
+        pictureButton.setOnClickListener(mPictureButtonListener);
     }
 
     @Override
@@ -179,6 +197,7 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onConfigureFailed(@NonNull CameraCaptureSession session) {
 
+
                 }
             }, null);
         }catch (CameraAccessException e){
@@ -187,9 +206,24 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private CameraCaptureSession.CaptureCallback mCaptureCallback = new CameraCaptureSession.CaptureCallback() {
+        private void process(CaptureResult result){
+            switch (mState){
+                case STATE_PREVIEW: {
+                    break;
+                }
+                case STATE_WAITING_LOCK:{
+                    Integer afStatge = result.get(CaptureResult.CONTROL_AF_STATE);
+
+                }
+
+            }
+
+        }
+
         @Override
         public void onCaptureProgressed(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, @NonNull CaptureResult partialResult) {
             super.onCaptureProgressed(session, request, partialResult);
+            process(partialResult);
 
         }
 
@@ -199,4 +233,25 @@ public class MainActivity extends AppCompatActivity {
 
         }
     };
+
+    private View.OnClickListener mPictureButtonListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View view) {
+            takePicture();
+        }
+    };
+
+    private void takePicture(){
+        try{
+            mCaptureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CameraMetadata.CONTROL_AF_TRIGGER_START);
+            mState = STATE_WAITING_LOCK;
+            mCameraCaptureSession.capture(mCaptureRequestBuilder.build(), mCaptureCallback, mBackgroundHandler);
+        }catch (CameraAccessException e){
+            e.printStackTrace();
+        }
+
+    }
+
+
+
 }
